@@ -1,14 +1,21 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hello World</title>
-  <link href='/style.css' rel='stylesheet'>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fortune Teller</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Hello, world!</h1>
-  <button onclick="console.log('hello');">Press me</button>
-  <script defer type="text/javascript" src="/main.js"></script>
+    <div id="app">
+        <h1>Enter Your Birth Year</h1>
+        <p>Discover your destiny</p>
+        <div class="input-container">
+            <input type="number" id="birth-year-input" placeholder="e.g., 1990">
+            <button id="fortune-button">Reveal My Fortune</button>
+        </div>
+        <div id="card-container"></div>
+    </div>
+    <script src="main.js"></script>
 </body>
 </html>
