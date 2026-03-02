@@ -1,11 +1,12 @@
 :root {
-    --bg-color: #111111;
-    --card-bg: #1c1c1c;
+    --bg-color: #0c0c0c;
+    --card-bg: #161616;
     --gold: #D4AF37;
     --gold-glow: rgba(212, 175, 55, 0.4);
     --text-primary: #ffffff;
-    --text-secondary: #b0b0b0;
-    --radius: 12px;
+    --text-secondary: #aaaaaa;
+    --radius: 16px;
+    --danger: #ff4d4d;
 }
 
 * {
@@ -17,279 +18,216 @@
 body {
     background-color: var(--bg-color);
     color: var(--text-primary);
-    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+    font-family: 'Pretendard', sans-serif;
     line-height: 1.6;
 }
 
 #app {
     max-width: 800px;
     margin: 0 auto;
-    padding: 2rem 1rem;
+    padding: 2rem 1.5rem;
 }
 
 header {
     text-align: center;
-    margin-bottom: 3rem;
+    margin-bottom: 3.5rem;
 }
 
 header h1 {
-    font-size: 2.5rem;
+    font-size: 2.8rem;
     color: var(--gold);
-    text-transform: uppercase;
-    letter-spacing: 2px;
+    text-shadow: 0 0 20px var(--gold-glow);
     margin-bottom: 0.5rem;
-}
-
-header p {
-    color: var(--text-secondary);
 }
 
 .input-section {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2rem;
-    margin-bottom: 4rem;
-}
-
-.voice-btn-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.8rem;
+    gap: 2.5rem;
+    margin-bottom: 5rem;
 }
 
 .glow-btn {
-    width: 80px;
-    height: 80px;
+    width: 90px;
+    height: 90px;
     border-radius: 50%;
     background: transparent;
-    border: 2px solid var(--gold);
+    border: 3px solid var(--gold);
     color: var(--gold);
-    font-size: 1.8rem;
+    font-size: 2rem;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: 0.3s;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 0 15px var(--gold-glow);
+    box-shadow: 0 0 20px var(--gold-glow);
 }
 
 .glow-btn:hover {
     background: var(--gold);
-    color: black;
-    box-shadow: 0 0 25px var(--gold);
+    color: #000;
 }
 
 .glow-btn.recording {
-    background: #ff4d4d;
-    border-color: #ff4d4d;
+    background: var(--danger);
+    border-color: var(--danger);
     color: white;
-    box-shadow: 0 0 20px rgba(255, 77, 77, 0.5);
     animation: pulse 1.5s infinite;
 }
 
 @keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-    100% { transform: scale(1); }
-}
-
-#voice-status {
-    font-size: 0.9rem;
-    color: var(--text-secondary);
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 77, 77, 0.7); }
+    70% { transform: scale(1.05); box-shadow: 0 0 0 20px rgba(255, 77, 77, 0); }
+    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 77, 77, 0); }
 }
 
 .text-input-container {
     display: flex;
     width: 100%;
-    max-width: 500px;
-    gap: 0.5rem;
+    max-width: 550px;
+    background: var(--card-bg);
+    padding: 6px;
+    border-radius: var(--radius);
+    border: 1px solid #333;
 }
 
 #exercise-input {
     flex: 1;
-    background: var(--card-bg);
-    border: 1px solid #333;
+    background: transparent;
+    border: none;
     color: white;
-    padding: 1rem;
-    border-radius: var(--radius);
-    font-size: 1rem;
+    padding: 0.8rem 1.2rem;
+    font-size: 1.1rem;
     outline: none;
-}
-
-#exercise-input:focus {
-    border-color: var(--gold);
 }
 
 #add-btn {
     background: var(--gold);
     color: black;
     border: none;
-    padding: 0 1.5rem;
-    border-radius: var(--radius);
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-}
-
-.section-header h2 {
-    font-size: 1.3rem;
-}
-
-.outline-btn {
-    background: transparent;
-    border: 1px solid var(--gold);
-    color: var(--gold);
-    padding: 0.5rem 1rem;
-    border-radius: var(--radius);
+    padding: 0 2rem;
+    border-radius: calc(var(--radius) - 4px);
+    font-weight: 700;
     cursor: pointer;
 }
 
 .workout-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 2rem;
 }
 
 .workout-card {
     background: var(--card-bg);
     border-radius: var(--radius);
     overflow: hidden;
-    transition: transform 0.2s;
     border: 1px solid #222;
-}
-
-.workout-card:hover {
-    transform: translateY(-5px);
+    transition: 0.3s;
 }
 
 .workout-card img {
     width: 100%;
-    height: 180px;
+    height: 220px;
     object-fit: cover;
-    background: #2a2a2a;
 }
 
 .card-info {
-    padding: 1rem;
+    padding: 1.5rem;
 }
 
 .card-info h3 {
-    margin-bottom: 0.5rem;
+    font-size: 1.4rem;
     color: var(--gold);
+    margin-bottom: 0.8rem;
 }
 
-.card-stats {
-    display: flex;
-    justify-content: space-between;
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-}
-
-/* Modal Styling */
+/* Modal UI */
 .modal {
     display: none;
     position: fixed;
-    z-index: 100;
+    z-index: 1000;
     left: 0;
     top: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0,0,0,0.8);
-    backdrop-filter: blur(5px);
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(8px);
 }
 
 .modal-content {
-    background-color: var(--bg-color);
-    margin: 5% auto;
+    background: #111;
+    margin: 10% auto;
     padding: 2.5rem;
-    border: 1px solid var(--gold);
+    border: 1px solid #333;
     width: 90%;
-    max-width: 600px;
+    max-width: 500px;
     border-radius: var(--radius);
     position: relative;
-    max-height: 85vh;
-    overflow-y: auto;
 }
 
-.close {
-    position: absolute;
-    right: 20px;
-    top: 20px;
-    color: var(--text-secondary);
-    font-size: 28px;
+.confirm-box {
+    text-align: center;
+    border: 2px solid var(--gold);
+}
+
+.confirm-box h3 {
+    margin-bottom: 1.5rem;
+    color: var(--gold);
+}
+
+.confirm-preview {
+    background: #1a1a1a;
+    padding: 1.5rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+    font-size: 1.2rem;
+}
+
+.confirm-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.action-btn {
+    flex: 1;
+    padding: 1rem;
+    border: none;
+    border-radius: 12px;
     font-weight: bold;
+    font-size: 1rem;
     cursor: pointer;
 }
 
-#report-view h2 {
+.action-btn.yes { background: var(--gold); color: #000; }
+.action-btn.no { background: #333; color: white; }
+
+.outline-btn {
+    background: transparent;
+    border: 1.5px solid var(--gold);
     color: var(--gold);
-    margin-bottom: 1.5rem;
-    text-align: center;
-}
-
-.report-summary {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-    margin-bottom: 2rem;
-    background: var(--card-bg);
-    padding: 1.5rem;
-    border-radius: var(--radius);
-}
-
-.report-item span {
-    display: block;
-    color: var(--text-secondary);
-    font-size: 0.8rem;
-}
-
-.report-item strong {
-    font-size: 1.2rem;
-    color: var(--gold);
-}
-
-.report-categories h4 {
-    margin: 1.5rem 0 0.5rem 0;
-    border-bottom: 1px solid #333;
-    padding-bottom: 0.5rem;
+    padding: 0.6rem 1.2rem;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
 }
 
 .email-section {
-    margin-top: 2rem;
-    padding-top: 1.5rem;
-    border-top: 1px dashed #333;
+    margin-top: 2.5rem;
     display: flex;
-    gap: 0.5rem;
+    gap: 10px;
 }
 
 #email-input {
     flex: 1;
-    background: #222;
+    background: #1a1a1a;
     border: 1px solid #333;
     color: white;
-    padding: 0.8rem;
-    border-radius: var(--radius);
-}
-
-#send-email-btn {
-    background: var(--gold);
-    border: none;
-    padding: 0 1rem;
-    border-radius: var(--radius);
-    font-weight: bold;
-    cursor: pointer;
+    padding: 1rem;
+    border-radius: 12px;
 }
 
 @media (max-width: 600px) {
-    header h1 { font-size: 1.8rem; }
-    .report-summary { grid-template-columns: 1fr; }
     .workout-grid { grid-template-columns: 1fr; }
+    header h1 { font-size: 2.2rem; }
 }
