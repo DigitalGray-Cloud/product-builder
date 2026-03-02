@@ -84,7 +84,7 @@ function parseWorkout(text) {
         weight, reps, sets,
         date: today,
         isUncertain,
-        image: `https://loremflickr.com/600/400/gym,fitness,${encodeURIComponent(exerciseName)}`
+        image: `https://loremflickr.com/600/400/gym,fitness,${encodeURIComponent(exerciseName)}?t=${Date.now()}`
     };
 }
 
