@@ -1,105 +1,13 @@
 body {
-    background-color: #010101;
-    background-image: 
-        radial-gradient(circle at 50% 50%, rgba(20, 20, 50, 0.4) 0%, transparent 80%),
-        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='1' fill='white' fill-opacity='0.2'/%3E%3C/svg%3E");
-    color: #FFD700;
-    font-family: 'Playfair Display', 'Garamond', serif;
+    font-family: sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    text-align: center;
-    overflow-x: hidden;
+    margin: 0;
+    background-color: #f0f0f0;
 }
 
 #app {
-    width: 90%;
-    max-width: 600px;
-    padding: 2rem;
-    position: relative;
-}
-
-.language-toggle {
-    position: absolute;
-    top: -20px;
-    right: 20px;
-    display: flex;
-    gap: 0.5rem;
-}
-
-.language-toggle button {
-    background: rgba(255, 215, 0, 0.1);
-    border: 1px solid rgba(255, 215, 0, 0.5);
-    color: #FFD700;
-    padding: 0.3rem 0.8rem;
-    cursor: pointer;
-    border-radius: 4px;
-    font-size: 0.8rem;
-    transition: all 0.3s ease;
-}
-
-.language-toggle button.active {
-    background: #FFD700;
-    color: #000;
-}
-
-h1 {
-    font-size: 3.5rem;
-    margin-bottom: 0.5rem;
-    letter-spacing: 2px;
-    text-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
-}
-
-p {
-    font-size: 1.3rem;
-    color: #bfa36a;
-    font-style: italic;
-    margin-bottom: 2rem;
-}
-
-.input-container {
-    display: flex;
-    justify-content: center;
-    gap: 1rem;
-    margin-bottom: 3rem;
-}
-
-#birth-year-input {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid #FFD700;
-    color: #FFD700;
-    padding: 1rem;
-    border-radius: 12px;
-    font-size: 1.1rem;
-    width: 120px;
-    outline: none;
-    transition: box-shadow 0.3s;
-}
-
-#birth-year-input:focus {
-    box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
-}
-
-#fortune-button {
-    background: linear-gradient(135deg, #FFD700 0%, #B8860B 100%);
-    color: #000;
-    border: none;
-    padding: 1rem 2rem;
-    border-radius: 12px;
-    font-size: 1.1rem;
-    font-weight: bold;
-    cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.3s;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-}
-
-#fortune-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 15px 30px rgba(255, 215, 0, 0.3);
-}
-
-#card-container {
-    perspective: 1500px;
-    margin-top: 2rem;
+    text-align: center;
 }
