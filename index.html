@@ -1,14 +1,56 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>New Project</title>
+    <title>운동 마스터 - Workout Master</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
     <div id="app">
-        <h1>Hello World</h1>
+        <header>
+            <h1>🏋️ 운동 마스터</h1>
+            <p id="current-date"></p>
+        </header>
+
+        <section class="input-section">
+            <div class="voice-btn-container">
+                <button id="voice-btn" class="glow-btn">
+                    <i class="fas fa-microphone"></i>
+                </button>
+                <span id="voice-status">버튼을 눌러 말하기</span>
+            </div>
+
+            <div class="text-input-container">
+                <input type="text" id="exercise-input" placeholder="예: 벤치프레스 80kg 8회 5세트">
+                <button id="add-btn">기록</button>
+            </div>
+        </section>
+
+        <section class="history-section">
+            <div class="section-header">
+                <h2>오늘의 운동 기록</h2>
+                <button id="report-btn" class="outline-btn">📊 월별 리포트</button>
+            </div>
+            <div id="workout-list" class="workout-grid">
+                <!-- 운동 카드들이 여기에 렌더링됩니다 -->
+            </div>
+        </section>
+
+        <!-- 월별 리포트 모달 -->
+        <div id="report-modal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <div id="report-view">
+                    <!-- 리포트 내용이 여기에 렌더링됩니다 -->
+                </div>
+                <div class="email-section">
+                    <input type="email" id="email-input" placeholder="이메일 주소">
+                    <button id="send-email-btn">리포트 전송</button>
+                </div>
+            </div>
+        </div>
     </div>
     <script src="main.js"></script>
 </body>
