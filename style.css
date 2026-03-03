@@ -28,6 +28,46 @@ body {
     padding: 2rem 1.5rem;
 }
 
+.auth-screen {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 1.5rem;
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 460px;
+    background: var(--card-bg);
+    border: 1px solid #333;
+    border-radius: var(--radius);
+    padding: 2rem;
+    text-align: center;
+}
+
+.auth-card h1 {
+    color: var(--gold);
+    margin-bottom: 0.8rem;
+}
+
+.auth-btn {
+    margin-top: 1.2rem;
+    width: 100%;
+    padding: 0.9rem 1rem;
+    background: var(--gold);
+    color: #000;
+    border: none;
+    border-radius: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.auth-status {
+    margin-top: 0.8rem;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
 header {
     text-align: center;
     margin-bottom: 3.5rem;
@@ -38,6 +78,15 @@ header h1 {
     color: var(--gold);
     text-shadow: 0 0 20px var(--gold-glow);
     margin-bottom: 0.5rem;
+}
+
+.user-bar {
+    margin-top: 1rem;
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
 }
 
 .input-section {
@@ -225,6 +274,26 @@ header h1 {
     color: white;
     padding: 1rem;
     border-radius: 12px;
+}
+
+.helper-text {
+    color: var(--text-secondary);
+    margin: 0.6rem 0 1rem;
+}
+
+.profile-form {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 1rem;
+}
+
+.profile-form input {
+    width: 100%;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    color: #fff;
+    padding: 0.9rem 1rem;
+    border-radius: 10px;
 }
 
 @media (max-width: 600px) {
