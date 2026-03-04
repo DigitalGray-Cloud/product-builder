@@ -231,8 +231,13 @@ header h1 {
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 0.8rem;
     width: 100%;
     text-align: center;
+}
+
+#voice-status {
+    min-height: 1.2em;
 }
 
 .glow-btn {
@@ -303,6 +308,49 @@ header h1 {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
     gap: 1rem;
+}
+
+.export-section {
+    margin-top: 1.4rem;
+    margin-bottom: 2rem;
+}
+
+.export-card {
+    background: var(--card-bg);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 0.9rem;
+    margin-top: 0.9rem;
+}
+
+.export-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.7rem;
+    margin-bottom: 0.6rem;
+}
+
+.export-head h3 {
+    margin: 0;
+    font-size: 1rem;
+    color: var(--navy);
+}
+
+.export-output {
+    width: 100%;
+    min-height: 130px;
+    resize: vertical;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 0.75rem;
+    font: 500 0.9rem/1.45 "Pretendard", "Noto Sans KR", sans-serif;
+    color: #1f2937;
+    background: #f8fafc;
+}
+
+.export-output.detail {
+    min-height: 170px;
 }
 
 .workout-card {

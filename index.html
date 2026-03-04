@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI 운동 마스터 - Workout Master</title>
-    <link rel="stylesheet" href="style.css?v=20260304-10">
+    <link rel="stylesheet" href="style.css?v=20260304-13">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
@@ -57,10 +57,11 @@
 
         <section class="input-section">
             <div class="voice-btn-container">
+                <button id="mic-permission-btn" class="outline-btn small">마이크 권한 허용</button>
                 <button id="voice-btn" class="glow-btn">
                     <i class="fas fa-microphone"></i>
                 </button>
-                <span id="voice-status">버튼을 눌러 말하기</span>
+                <span id="voice-status">마이크 권한을 먼저 허용해주세요.</span>
             </div>
 
             <div class="text-input-container">
@@ -77,6 +78,28 @@
             <div id="workout-list" class="workout-grid">
                 <!-- 운동 카드들이 여기에 렌더링됩니다 -->
             </div>
+        </section>
+
+        <section class="export-section">
+            <div class="section-header">
+                <h2>요약/복사</h2>
+                <button id="copy-all-btn" class="outline-btn small">전체 복사</button>
+            </div>
+            <div class="export-card">
+                <div class="export-head">
+                    <h3>요약</h3>
+                    <button id="copy-summary-btn" class="outline-btn small">요약 복사</button>
+                </div>
+                <textarea id="summary-output" class="export-output" readonly></textarea>
+            </div>
+            <div class="export-card">
+                <div class="export-head">
+                    <h3>상세</h3>
+                    <button id="copy-detail-btn" class="outline-btn small">상세 복사</button>
+                </div>
+                <textarea id="detail-output" class="export-output detail" readonly></textarea>
+            </div>
+            <p id="copy-status" class="helper-text"></p>
         </section>
 
         <section id="master-panel" class="master-panel" hidden>
@@ -139,6 +162,6 @@
         </div>
     </div>
 
-    <script type="module" src="main.js?v=20260304-10"></script>
+    <script type="module" src="main.js?v=20260304-13"></script>
 </body>
 </html>

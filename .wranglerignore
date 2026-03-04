@@ -1,0 +1,7 @@
+.git
+.firebase
+.idx
+firebase.json
+.firebaserc
+firestore.rules
+blueprint.md

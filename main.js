@@ -30,7 +30,7 @@ import {
 const IMAGE_FALLBACK = 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=1200&auto=format&fit=crop';
 const LOCAL_LEGACY_KEYS = ['workout_master_db_v2', 'workout_master_db'];
 const MASTER_EMAIL = 'digitalgray1@gmail.com';
-const BUILD_ID = '20260304-10';
+const BUILD_ID = '20260304-13';
 
 const exerciseDB = {
     '리버스 펙덱 플라이': {
@@ -104,9 +104,16 @@ const logoutBtn = document.getElementById('logout-btn');
 
 const exerciseInput = document.getElementById('exercise-input');
 const addBtn = document.getElementById('add-btn');
+const micPermissionBtn = document.getElementById('mic-permission-btn');
 const voiceBtn = document.getElementById('voice-btn');
 const voiceStatus = document.getElementById('voice-status');
 const workoutList = document.getElementById('workout-list');
+const summaryOutput = document.getElementById('summary-output');
+const detailOutput = document.getElementById('detail-output');
+const copySummaryBtn = document.getElementById('copy-summary-btn');
+const copyDetailBtn = document.getElementById('copy-detail-btn');
+const copyAllBtn = document.getElementById('copy-all-btn');
+const copyStatus = document.getElementById('copy-status');
 
 const reportModal = document.getElementById('report-modal');
 const reportView = document.getElementById('report-view');
@@ -132,6 +139,24 @@ let currentUser = null;
 let db;
 let auth;
 let masterUsersCache = [];
+let micPermissionGranted = false;
+let recognitionShouldRun = false;
+let recognitionSessionActive = false;
+let recognitionTranscript = '';
+let recognitionSilenceTimer = null;
+const VOICE_SILENCE_AUTO_STOP_MS = 1400;
+let lastVoiceEndedAtMs = null;
+
+const CATEGORY_IMAGE_QUERIES = {
+    가슴: ['barbell bench press gym', 'incline dumbbell press'],
+    하체: ['barbell squat rack', 'leg press machine gym'],
+    전신: ['deadlift gym training', 'kettlebell full body workout'],
+    어깨: ['dumbbell shoulder press', 'lateral raise gym'],
+    등: ['lat pulldown machine', 'seated cable row gym'],
+    팔: ['tricep pushdown cable', 'bicep curl dumbbell gym'],
+    후면어깨: ['rear delt fly machine', 'reverse pec deck'],
+    기타: ['gym workout session', 'strength training exercise']
+};
 
 function getLocalDateKey(date = new Date()) {
     const y = date.getFullYear();
@@ -164,23 +189,123 @@ function isMasterUser(user) {
 }
 
 function imageFromQuery(queryText) {
-    return `https://source.unsplash.com/600x400/?${encodeURIComponent(`${queryText},gym exercise`)}`;
+    const sig = Math.floor(Math.random() * 10000);
+    return `https://source.unsplash.com/600x400/?${encodeURIComponent(`${queryText},gym exercise`)}&sig=${sig}`;
 }
 
-function resolveExerciseImage(exerciseName, knownExercise) {
-    if (knownExercise?.imageUrl) return knownExercise.imageUrl;
-    if (knownExercise?.imageQuery) return imageFromQuery(knownExercise.imageQuery);
-    return imageFromQuery(exerciseName);
+function hashText(text) {
+    let hash = 0;
+    for (let i = 0; i < text.length; i += 1) {
+        hash = (hash * 31 + text.charCodeAt(i)) | 0;
+    }
+    return Math.abs(hash);
+}
+
+function resolveExerciseImage(exerciseName, knownExercise, seedText = '') {
+    const category = knownExercise?.category || '기타';
+    const categoryQueries = CATEGORY_IMAGE_QUERIES[category] || CATEGORY_IMAGE_QUERIES.기타;
+    const candidates = [];
+    if (knownExercise?.imageQuery) candidates.push(knownExercise.imageQuery);
+    candidates.push(...categoryQueries);
+    candidates.push(`${exerciseName} workout gym`);
+    const seed = seedText || `${exerciseName}-${Date.now()}`;
+    const picked = candidates[hashText(seed) % candidates.length];
+    const sig = hashText(`${seed}-sig`) % 10000;
+    return `https://source.unsplash.com/600x400/?${encodeURIComponent(`${picked},gym exercise`)}&sig=${sig}`;
+}
+
+function formatDateTime(ms) {
+    return new Intl.DateTimeFormat('ko-KR', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    }).format(new Date(ms));
+}
+
+function buildSummaryText(items) {
+    const totalSets = items.reduce((sum, w) => sum + (Number(w.sets) || 0), 0);
+    const totalReps = items.reduce((sum, w) => sum + ((Number(w.reps) || 0) * (Number(w.sets) || 0)), 0);
+    const totalRunDistance = items.reduce((sum, w) => sum + (Number(w.distanceKm) || 0), 0);
+    const totalVolume = items.reduce((sum, w) => {
+        const weight = Number(w.weight);
+        if (!Number.isFinite(weight)) return sum;
+        return sum + weight * (Number(w.reps) || 0) * (Number(w.sets) || 0);
+    }, 0);
+    const uniqueExercises = new Set(items.map((w) => w.exercise)).size;
+    const voiceEndedAt = lastVoiceEndedAtMs ? formatDateTime(lastVoiceEndedAtMs) : '없음';
+    const generatedAt = formatDateTime(Date.now());
+
+    return [
+        `[오늘 운동 요약] ${getLocalDateKey()}`,
+        `운동 종류: ${uniqueExercises}개`,
+        `기록 개수: ${items.length}개`,
+        `총 세트: ${totalSets}세트`,
+        `총 반복: ${totalReps}회`,
+        `총 볼륨: ${Math.round(totalVolume)}kg`,
+        `총 러닝 거리: ${totalRunDistance.toFixed(2)}km`,
+        `최근 음성 종료 시각: ${voiceEndedAt}`,
+        `요약 생성 시각: ${generatedAt}`
+    ].join('\n');
+}
+
+function buildDetailText(items) {
+    const lines = items.map((w, idx) => {
+        const timeMs = Number(w.createdAtMs) || Date.now();
+        const when = formatDateTime(timeMs);
+        const source = w.source === 'voice' ? '음성' : '직접입력';
+        if (w.isRunning) {
+            const distance = Number.isFinite(Number(w.distanceKm)) ? `${w.distanceKm}km` : '-';
+            const speed = Number.isFinite(Number(w.speedKmh)) ? `${w.speedKmh}km/h` : '-';
+            return `${idx + 1}. [${when}] ${w.exercise} / 거리:${distance} / 속도:${speed} / 입력:${source}`;
+        }
+        const weight = Number.isFinite(Number(w.weight)) ? `${w.weight}kg` : '맨몸';
+        return `${idx + 1}. [${when}] ${w.exercise} / ${weight} / ${w.reps}회 x ${w.sets}세트 / 입력:${source}`;
+    });
+
+    return [
+        `[오늘 운동 상세] ${getLocalDateKey()}`,
+        ...lines
+    ].join('\n');
+}
+
+function renderExportText(items) {
+    if (!summaryOutput || !detailOutput) return;
+    summaryOutput.value = buildSummaryText(items);
+    detailOutput.value = buildDetailText(items);
+}
+
+async function copyText(value, label) {
+    if (!value) return;
+    try {
+        await navigator.clipboard.writeText(value);
+        if (copyStatus) copyStatus.textContent = `${label} 복사 완료`;
+    } catch (err) {
+        console.error('클립보드 복사 실패:', err);
+        if (copyStatus) copyStatus.textContent = `${label} 복사 실패`;
+    }
 }
 
 function parseWorkout(text) {
+    const normalized = String(text || '').trim();
+    const runningPattern = /(런닝|러닝|달리기|조깅|러닝머신)/;
+    const isRunning = runningPattern.test(normalized);
     const weightMatch = text.match(/(\d+(?:\.\d+)?)\s*(kg|킬로)/i);
     const repsMatch = text.match(/(\d+)\s*(회|번)/);
     const setsMatch = text.match(/(\d+)\s*(세트|셋)/);
+    const distanceMatch = text.match(/(\d+(?:\.\d+)?)\s*(km|키로(?:미터)?|킬로(?:미터)?)/i);
+    const speedMatch =
+        text.match(/속도\s*(\d+(?:\.\d+)?)/i) ||
+        text.match(/(\d+(?:\.\d+)?)\s*(km\/h|kph|키로\/시|킬로\/시)/i);
 
     const weight = weightMatch ? parseFloat(weightMatch[1]) : null;
-    const reps = repsMatch ? parseInt(repsMatch[1], 10) : 0;
-    const sets = setsMatch ? parseInt(setsMatch[1], 10) : 0;
+    const reps = repsMatch ? parseInt(repsMatch[1], 10) : 10;
+    const sets = setsMatch ? parseInt(setsMatch[1], 10) : 1;
+    const distanceKm = distanceMatch ? parseFloat(distanceMatch[1]) : null;
+    const speedKmh = speedMatch ? parseFloat(speedMatch[1]) : null;
 
     let exerciseName = '';
     let knownExercise = null;
@@ -193,20 +318,30 @@ function parseWorkout(text) {
         }
     }
 
-    if (!exerciseName) {
+    if (isRunning) {
+        exerciseName = '러닝';
+        knownExercise = {
+            category: '전신',
+            imageQuery: 'running treadmill gym'
+        };
+    } else if (!exerciseName) {
         exerciseName = text.split(/\d/)[0].trim() || '기타 운동';
     }
 
     const now = new Date();
+    const createdAtMs = Date.now();
     return {
         exercise: exerciseName,
-        weight,
-        reps,
-        sets,
+        weight: isRunning ? null : weight,
+        reps: isRunning ? 0 : reps,
+        sets: isRunning ? 0 : sets,
+        isRunning,
+        distanceKm: isRunning ? distanceKm : null,
+        speedKmh: isRunning ? speedKmh : null,
         date: getLocalDateKey(now),
         month: getMonthKey(now),
-        image: resolveExerciseImage(exerciseName, knownExercise),
-        createdAtMs: Date.now()
+        image: resolveExerciseImage(exerciseName, knownExercise, `${createdAtMs}`),
+        createdAtMs
     };
 }
 
@@ -236,11 +371,15 @@ function renderWorkouts(items) {
         const stats = document.createElement('div');
         stats.className = 'card-stats';
 
-        const weight = document.createElement('span');
-        weight.textContent = w.weight ? `${w.weight}kg` : '맨몸';
-
         const performance = document.createElement('span');
-        performance.textContent = `${w.reps}회 × ${w.sets}세트`;
+        const weight = document.createElement('span');
+        if (w.isRunning) {
+            weight.textContent = Number.isFinite(Number(w.distanceKm)) ? `${w.distanceKm}km` : '거리 미입력';
+            performance.textContent = Number.isFinite(Number(w.speedKmh)) ? `${w.speedKmh}km/h` : '속도 미입력';
+        } else {
+            weight.textContent = Number.isFinite(Number(w.weight)) ? `${w.weight}kg` : '맨몸';
+            performance.textContent = `${w.reps}회 × ${w.sets}세트`;
+        }
 
         const actions = document.createElement('div');
         actions.className = 'card-actions';
@@ -283,7 +422,7 @@ function showLoggedIn(user) {
     applyUserLabel(user);
     updateCurrentDateLabel();
     if (!voiceBtn.disabled) {
-        voiceStatus.textContent = '마이크 버튼을 눌러 음성 기록';
+        voiceStatus.textContent = '마이크 버튼으로 녹음 시작';
     }
     exerciseInput.focus();
 }
@@ -300,6 +439,7 @@ async function loadTodayWorkouts() {
         .sort((a, b) => (b.createdAtMs || 0) - (a.createdAtMs || 0));
 
     renderWorkouts(items);
+    renderExportText(items);
 }
 
 function parseOptionalNumber(inputText, fallback) {
@@ -320,22 +460,41 @@ async function editWorkout(workout) {
     const nextExercise = prompt('운동명을 입력하세요', workout.exercise || '');
     if (nextExercise === null) return;
 
-    const nextWeight = parseOptionalNumber(prompt('무게(kg, 맨몸은 비움)', workout.weight ?? ''), workout.weight ?? null);
-    if (nextWeight.cancelled) return;
-    const nextReps = parseOptionalNumber(prompt('반복 횟수', workout.reps ?? ''), workout.reps ?? 0);
-    if (nextReps.cancelled) return;
-    const nextSets = parseOptionalNumber(prompt('세트 수', workout.sets ?? ''), workout.sets ?? 0);
-    if (nextSets.cancelled) return;
-
     const exerciseName = String(nextExercise).trim() || workout.exercise || '기타 운동';
-    await updateDoc(doc(db, 'users', currentUser.uid, 'workouts', workout.id), {
+    const isRunning = /(런닝|러닝|달리기|조깅|러닝머신)/.test(exerciseName);
+    const updates = {
         exercise: exerciseName,
-        weight: nextWeight.value,
-        reps: nextReps.value,
-        sets: nextSets.value,
-        image: resolveExerciseImage(exerciseName, exerciseDB[exerciseName]),
         updatedAt: serverTimestamp()
-    });
+    };
+
+    if (isRunning) {
+        const nextDistance = parseOptionalNumber(prompt('거리(km)', workout.distanceKm ?? ''), workout.distanceKm ?? null);
+        if (nextDistance.cancelled) return;
+        const nextSpeed = parseOptionalNumber(prompt('속도(km/h)', workout.speedKmh ?? ''), workout.speedKmh ?? null);
+        if (nextSpeed.cancelled) return;
+        updates.isRunning = true;
+        updates.distanceKm = nextDistance.value;
+        updates.speedKmh = nextSpeed.value;
+        updates.weight = null;
+        updates.reps = 0;
+        updates.sets = 0;
+    } else {
+        const nextWeight = parseOptionalNumber(prompt('무게(kg, 맨몸은 비움)', workout.weight ?? ''), workout.weight ?? null);
+        if (nextWeight.cancelled) return;
+        const nextReps = parseOptionalNumber(prompt('반복 횟수 (미입력 시 10)', workout.reps ?? 10), workout.reps ?? 10);
+        if (nextReps.cancelled) return;
+        const nextSets = parseOptionalNumber(prompt('세트 수', workout.sets ?? 1), workout.sets ?? 1);
+        if (nextSets.cancelled) return;
+        updates.isRunning = false;
+        updates.distanceKm = null;
+        updates.speedKmh = null;
+        updates.weight = nextWeight.value;
+        updates.reps = Number(nextReps.value) || 10;
+        updates.sets = Number(nextSets.value) || 1;
+    }
+
+    updates.image = resolveExerciseImage(exerciseName, exerciseDB[exerciseName], `${Date.now()}`);
+    await updateDoc(doc(db, 'users', currentUser.uid, 'workouts', workout.id), updates);
 
     await loadTodayWorkouts();
 }
@@ -678,6 +837,7 @@ async function migrateLocalHistoryIfNeeded(user) {
 function setupSpeechRecognition() {
     if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
         voiceBtn.disabled = true;
+        micPermissionBtn.disabled = true;
         voiceStatus.textContent = '이 브라우저는 음성 인식을 지원하지 않습니다.';
         return;
     }
@@ -685,57 +845,181 @@ function setupSpeechRecognition() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     recognition = new SpeechRecognition();
     recognition.lang = 'ko-KR';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    voiceBtn.disabled = true;
 
-    recognition.onstart = () => {
-        voiceBtn.classList.add('recording');
-        voiceStatus.textContent = '듣는 중...';
+    const clearSilenceTimer = () => {
+        if (!recognitionSilenceTimer) return;
+        clearTimeout(recognitionSilenceTimer);
+        recognitionSilenceTimer = null;
     };
 
-    recognition.onend = () => {
+    const armSilenceTimer = () => {
+        clearSilenceTimer();
+        recognitionSilenceTimer = setTimeout(() => {
+            if (recognitionShouldRun && recognitionSessionActive) {
+                recognitionShouldRun = false;
+                recognition.stop();
+            }
+        }, VOICE_SILENCE_AUTO_STOP_MS);
+    };
+
+    const setPermissionState = (granted) => {
+        micPermissionGranted = Boolean(granted);
+        voiceBtn.disabled = !micPermissionGranted;
+        micPermissionBtn.hidden = micPermissionGranted;
+        if (!recognitionSessionActive) {
+            voiceStatus.textContent = micPermissionGranted
+                ? '마이크 버튼으로 녹음 시작'
+                : '마이크 권한을 먼저 허용해주세요.';
+        }
+    };
+
+    const commitRecognizedText = async () => {
+        lastVoiceEndedAtMs = Date.now();
+        const text = recognitionTranscript.trim();
+        recognitionTranscript = '';
+        if (!text) {
+            voiceStatus.textContent = '인식된 음성이 없어요. 다시 시도해주세요.';
+            return;
+        }
+
+        exerciseInput.value = text;
+        const workout = parseWorkout(text);
+        workout.source = 'voice';
+        workout.recordedAt = new Date(lastVoiceEndedAtMs).toISOString();
+        workout.createdAtMs = lastVoiceEndedAtMs;
+        if (workout.exercise) {
+            await commitWorkout(workout);
+            voiceStatus.textContent = `기록 완료 (${formatDateTime(lastVoiceEndedAtMs)})`;
+        }
+    };
+
+    const stopListening = () => {
+        recognitionShouldRun = false;
+        try {
+            recognition.stop();
+        } catch (err) {
+            console.error('음성 인식 종료 실패:', err);
+        }
+    };
+
+    const startListening = () => {
+        if (!micPermissionGranted) {
+            voiceStatus.textContent = '먼저 마이크 권한을 허용해주세요.';
+            return;
+        }
+        recognitionShouldRun = true;
+        recognitionTranscript = '';
+        try {
+            recognition.start();
+        } catch (err) {
+            console.error('음성 인식 시작 실패:', err);
+            recognitionShouldRun = false;
+            voiceStatus.textContent = '이미 실행 중입니다.';
+        }
+    };
+
+    recognition.onstart = () => {
+        recognitionSessionActive = true;
+        voiceBtn.classList.add('recording');
+        voiceStatus.textContent = '듣는 중...';
+        armSilenceTimer();
+    };
+
+    recognition.onend = async () => {
+        clearSilenceTimer();
+        recognitionSessionActive = false;
         voiceBtn.classList.remove('recording');
-        voiceStatus.textContent = '버튼을 눌러 말하기';
+        if (recognitionShouldRun) {
+            try {
+                recognition.start();
+                return;
+            } catch (err) {
+                console.error('음성 인식 재시작 실패:', err);
+                recognitionShouldRun = false;
+            }
+        }
+        await commitRecognizedText();
     };
 
     recognition.onerror = (event) => {
+        clearSilenceTimer();
+        recognitionShouldRun = false;
         voiceBtn.classList.remove('recording');
         if (event?.error === 'not-allowed' || event?.error === 'service-not-allowed') {
             voiceStatus.textContent = '마이크 권한이 차단되었습니다. 브라우저 사이트 설정에서 마이크를 허용해주세요.';
+            setPermissionState(false);
             return;
         }
         voiceStatus.textContent = '음성 인식 실패. 다시 시도해주세요.';
     };
 
-    recognition.onresult = async (e) => {
-        const text = e.results[0][0].transcript;
-        exerciseInput.value = text;
-        const workout = parseWorkout(text.trim());
-        if (workout.exercise) {
-            await commitWorkout(workout);
+    recognition.onresult = (e) => {
+        let partial = '';
+        for (let i = e.resultIndex; i < e.results.length; i += 1) {
+            const candidate = e.results[i][0]?.transcript || '';
+            if (e.results[i].isFinal) {
+                recognitionTranscript += `${candidate} `;
+            } else {
+                partial += candidate;
+            }
+        }
+        voiceStatus.textContent = partial ? `듣는 중... ${partial}` : '듣는 중...';
+        armSilenceTimer();
+    };
+
+    micPermissionBtn.onclick = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            stream.getTracks().forEach((track) => track.stop());
+            setPermissionState(true);
+        } catch (err) {
+            console.error('마이크 권한 요청 실패:', err);
+            setPermissionState(false);
+            voiceStatus.textContent = '마이크 권한 허용이 필요합니다.';
         }
     };
 
     voiceBtn.onclick = () => {
-        try {
-            recognition.start();
-        } catch (err) {
-            console.error('음성 인식 시작 실패:', err);
-            voiceStatus.textContent = '이미 실행 중입니다.';
+        if (recognitionShouldRun || recognitionSessionActive) {
+            stopListening();
+            return;
         }
+        startListening();
     };
+
+    if (navigator.permissions?.query) {
+        navigator.permissions.query({ name: 'microphone' }).then((status) => {
+            setPermissionState(status.state === 'granted');
+            status.onchange = () => {
+                setPermissionState(status.state === 'granted');
+            };
+        }).catch(() => {
+            setPermissionState(false);
+        });
+    } else {
+        setPermissionState(false);
+    }
 }
 
 function wireEvents() {
     addBtn.onclick = async () => {
         const input = exerciseInput.value.trim();
         if (!input) return;
-        await commitWorkout(parseWorkout(input));
+        const workout = parseWorkout(input);
+        workout.source = 'text';
+        await commitWorkout(workout);
     };
 
     exerciseInput.onkeypress = async (e) => {
         if (e.key !== 'Enter') return;
         const input = exerciseInput.value.trim();
         if (!input) return;
-        await commitWorkout(parseWorkout(input));
+        const workout = parseWorkout(input);
+        workout.source = 'text';
+        await commitWorkout(workout);
     };
 
     document.getElementById('report-btn').onclick = async () => {
@@ -764,6 +1048,25 @@ function wireEvents() {
     if (masterRefreshBtn) {
         masterRefreshBtn.onclick = async () => {
             await loadMasterDashboard();
+        };
+    }
+
+    if (copySummaryBtn) {
+        copySummaryBtn.onclick = async () => {
+            await copyText(summaryOutput?.value || '', '요약');
+        };
+    }
+
+    if (copyDetailBtn) {
+        copyDetailBtn.onclick = async () => {
+            await copyText(detailOutput?.value || '', '상세');
+        };
+    }
+
+    if (copyAllBtn) {
+        copyAllBtn.onclick = async () => {
+            const fullText = [summaryOutput?.value || '', detailOutput?.value || ''].filter(Boolean).join('\n\n');
+            await copyText(fullText, '전체');
         };
     }
 
