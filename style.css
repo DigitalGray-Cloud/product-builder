@@ -129,6 +129,7 @@ body {
 .brand-illustration.giant-app {
     width: 400px;
     height: 400px;
+    background: #ffffff;
 }
 
 .auth-description {
