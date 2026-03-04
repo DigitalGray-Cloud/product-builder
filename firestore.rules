@@ -1,11 +1,27 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isMaster() {
+      return isSignedIn()
+        && request.auth.token.email == "digitalgray1@gmail.com"
+        && request.auth.token.firebase.sign_in_provider == "google.com";
+    }
+
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if isOwner(userId) || isMaster();
+      allow write: if isOwner(userId);
 
       match /workouts/{workoutId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read: if isOwner(userId) || isMaster();
+        allow write: if isOwner(userId);
       }
     }
   }

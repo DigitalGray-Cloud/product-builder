@@ -20,6 +20,8 @@ import {
     getDocs,
     setDoc,
     addDoc,
+    updateDoc,
+    deleteDoc,
     query,
     where,
     serverTimestamp
@@ -28,7 +30,7 @@ import {
 const IMAGE_FALLBACK = 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=1200&auto=format&fit=crop';
 const LOCAL_LEGACY_KEYS = ['workout_master_db_v2', 'workout_master_db'];
 const MASTER_EMAIL = 'digitalgray1@gmail.com';
-const BUILD_ID = '20260304-3';
+const BUILD_ID = '20260304-4';
 
 const exerciseDB = {
     '리버스 펙덱 플라이': {
@@ -240,8 +242,26 @@ function renderWorkouts(items) {
         const performance = document.createElement('span');
         performance.textContent = `${w.reps}회 × ${w.sets}세트`;
 
+        const actions = document.createElement('div');
+        actions.className = 'card-actions';
+
+        const editBtn = document.createElement('button');
+        editBtn.className = 'outline-btn small';
+        editBtn.textContent = '수정';
+        editBtn.onclick = async () => {
+            await editWorkout(w);
+        };
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'outline-btn danger small';
+        deleteBtn.textContent = '삭제';
+        deleteBtn.onclick = async () => {
+            await deleteWorkout(w.id);
+        };
+
+        actions.append(editBtn, deleteBtn);
         stats.append(weight, performance);
-        info.append(title, stats);
+        info.append(title, stats, actions);
         card.append(img, info);
         fragment.appendChild(card);
     });
@@ -260,10 +280,7 @@ function showLoggedOut() {
 function showLoggedIn(user) {
     authScreen.hidden = true;
     appScreen.hidden = false;
-    userEmail.textContent = user.email || user.displayName || (user.isAnonymous ? '게스트 모드' : user.uid);
-    if (isMasterUser(user)) {
-        userEmail.textContent = `${userEmail.textContent} (MASTER)`;
-    }
+    applyUserLabel(user);
     updateCurrentDateLabel();
     if (!voiceBtn.disabled) {
         voiceStatus.textContent = '마이크 버튼을 눌러 음성 기록';
@@ -279,10 +296,62 @@ async function loadTodayWorkouts() {
     const q = query(workoutsRef, where('date', '==', today));
     const snap = await getDocs(q);
     const items = snap.docs
-        .map((docSnap) => docSnap.data())
+        .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
         .sort((a, b) => (b.createdAtMs || 0) - (a.createdAtMs || 0));
 
     renderWorkouts(items);
+}
+
+function parseOptionalNumber(inputText, fallback) {
+    if (inputText === null) {
+        return { cancelled: true, value: fallback };
+    }
+    const trimmed = String(inputText).trim();
+    if (!trimmed) {
+        return { cancelled: false, value: fallback };
+    }
+    const num = Number(trimmed);
+    return { cancelled: false, value: Number.isFinite(num) ? num : fallback };
+}
+
+async function editWorkout(workout) {
+    if (!currentUser || !workout?.id) return;
+
+    const nextExercise = prompt('운동명을 입력하세요', workout.exercise || '');
+    if (nextExercise === null) return;
+
+    const nextWeight = parseOptionalNumber(prompt('무게(kg, 맨몸은 비움)', workout.weight ?? ''), workout.weight ?? null);
+    if (nextWeight.cancelled) return;
+    const nextReps = parseOptionalNumber(prompt('반복 횟수', workout.reps ?? ''), workout.reps ?? 0);
+    if (nextReps.cancelled) return;
+    const nextSets = parseOptionalNumber(prompt('세트 수', workout.sets ?? ''), workout.sets ?? 0);
+    if (nextSets.cancelled) return;
+
+    const exerciseName = String(nextExercise).trim() || workout.exercise || '기타 운동';
+    await updateDoc(doc(db, 'users', currentUser.uid, 'workouts', workout.id), {
+        exercise: exerciseName,
+        weight: nextWeight.value,
+        reps: nextReps.value,
+        sets: nextSets.value,
+        image: resolveExerciseImage(exerciseName, exerciseDB[exerciseName]),
+        updatedAt: serverTimestamp()
+    });
+
+    await loadTodayWorkouts();
+}
+
+async function deleteWorkout(workoutId) {
+    if (!currentUser || !workoutId) return;
+    if (!confirm('이 기록을 삭제할까요?')) return;
+
+    await deleteDoc(doc(db, 'users', currentUser.uid, 'workouts', workoutId));
+    await loadTodayWorkouts();
+}
+
+function applyUserLabel(user, nickname = '') {
+    const nick = String(nickname || '').trim();
+    const baseLabel = nick || user.email || user.displayName || (user.isAnonymous ? '게스트 모드' : user.uid);
+    userEmail.textContent = isMasterUser(user) ? `${baseLabel} (MASTER)` : baseLabel;
 }
 
 async function commitWorkout(workout) {
@@ -489,18 +558,25 @@ async function ensureUserProfile(user) {
     const providerIds = (user.providerData || []).map((p) => p.providerId);
 
     if (!userSnap.exists()) {
+        const initialName = String(user.displayName || '').trim();
         await setDoc(userRef, {
             email: user.email || '',
             displayName: user.displayName || '',
             photoURL: user.photoURL || '',
             isAnonymous: Boolean(user.isAnonymous),
             providerIds,
+            profile: {
+                name: initialName,
+                age: null,
+                heightCm: null,
+                weightKg: null
+            },
             lastLoginAt: serverTimestamp(),
             createdAt: serverTimestamp(),
             profileCompleted: false
         }, { merge: true });
         profileModal.style.display = 'block';
-        return;
+        return { profile: { name: initialName } };
     }
 
     await setDoc(userRef, {
@@ -516,6 +592,7 @@ async function ensureUserProfile(user) {
     if (!profile.profileCompleted && !profile.profileSkippedAt) {
         profileModal.style.display = 'block';
     }
+    return profile;
 }
 
 async function saveProfile(skip = false) {
@@ -528,9 +605,10 @@ async function saveProfile(skip = false) {
             updatedAt: serverTimestamp()
         }, { merge: true });
     } else {
+        const nickname = profileName.value.trim();
         await setDoc(userRef, {
             profile: {
-                name: profileName.value.trim(),
+                name: nickname,
                 age: profileAge.value ? Number(profileAge.value) : null,
                 heightCm: profileHeight.value ? Number(profileHeight.value) : null,
                 weightKg: profileWeight.value ? Number(profileWeight.value) : null
@@ -538,6 +616,7 @@ async function saveProfile(skip = false) {
             profileCompleted: true,
             updatedAt: serverTimestamp()
         }, { merge: true });
+        applyUserLabel(currentUser, nickname);
     }
 
     profileModal.style.display = 'none';
@@ -617,8 +696,12 @@ function setupSpeechRecognition() {
         voiceStatus.textContent = '버튼을 눌러 말하기';
     };
 
-    recognition.onerror = () => {
+    recognition.onerror = (event) => {
         voiceBtn.classList.remove('recording');
+        if (event?.error === 'not-allowed' || event?.error === 'service-not-allowed') {
+            voiceStatus.textContent = '마이크 권한이 차단되었습니다. 브라우저 사이트 설정에서 마이크를 허용해주세요.';
+            return;
+        }
         voiceStatus.textContent = '음성 인식 실패. 다시 시도해주세요.';
     };
 
@@ -775,7 +858,8 @@ async function bootstrap() {
         }
 
         try {
-            await ensureUserProfile(user);
+            const profileData = await ensureUserProfile(user);
+            applyUserLabel(user, profileData?.profile?.name || '');
             await migrateLocalHistoryIfNeeded(user);
             await loadTodayWorkouts();
             if (isMasterUser(user)) {
