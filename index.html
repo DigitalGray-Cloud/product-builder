@@ -3,23 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>운동 마스터 - Workout Master</title>
+    <title>AI 운동 마스터 - Workout Master</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
     <div id="auth-screen" class="auth-screen">
         <div class="auth-card">
-            <h1>🏋️ 운동 마스터</h1>
-            <p>구글 계정으로 1초 로그인하고, 모든 기기에서 기록을 동기화하세요.</p>
-            <button id="google-login-btn" class="auth-btn">Google로 원클릭 로그인</button>
+            <span class="auth-badge">AI FITNESS</span>
+            <h1>AI 운동 마스터</h1>
+            <p class="auth-description">
+                지금은 게스트로 시작할 수 있지만, 나중에 AI 분석과 맞춤 추천을 받으려면 로그인이 좋습니다.
+            </p>
+            <div class="auth-actions">
+                <button id="google-login-btn" class="auth-btn google-btn">
+                    <i class="fa-brands fa-google"></i>
+                    Google로 로그인
+                </button>
+                <button id="kakao-login-btn" class="auth-btn kakao-btn">
+                    <i class="fa-solid fa-comment"></i>
+                    카카오로 로그인
+                </button>
+                <button id="guest-login-btn" class="auth-btn guest-btn">게스트로 시작</button>
+            </div>
             <p id="auth-status" class="auth-status">로그인이 필요합니다.</p>
         </div>
     </div>
 
     <div id="app" hidden>
         <header>
-            <h1>🏋️ 운동 마스터</h1>
+            <h1>🏋️ AI 운동 마스터</h1>
             <p id="current-date"></p>
             <div class="user-bar">
                 <span id="user-email"></span>
@@ -48,6 +61,33 @@
             </div>
             <div id="workout-list" class="workout-grid">
                 <!-- 운동 카드들이 여기에 렌더링됩니다 -->
+            </div>
+        </section>
+
+        <section id="master-panel" class="master-panel" hidden>
+            <div class="section-header">
+                <h2>마스터 대시보드</h2>
+                <button id="master-refresh-btn" class="outline-btn">새로고침</button>
+            </div>
+            <div class="master-stats">
+                <div class="master-stat-card">
+                    <span>총 가입자</span>
+                    <strong id="master-total-users">0명</strong>
+                </div>
+                <div class="master-stat-card">
+                    <span>오늘 운동한 인원</span>
+                    <strong id="master-active-users">0명</strong>
+                </div>
+            </div>
+            <div class="master-grid">
+                <div class="master-list-panel">
+                    <h3>사용자 목록</h3>
+                    <div id="master-user-list" class="master-user-list"></div>
+                </div>
+                <div class="master-detail-panel">
+                    <h3 id="master-detail-title">사용자를 선택해주세요</h3>
+                    <div id="master-detail-list" class="master-detail-list"></div>
+                </div>
             </div>
         </section>
 
@@ -84,6 +124,6 @@
         </div>
     </div>
 
-    <script type="module" src="main.js"></script>
+    <script type="module" src="main.js?v=20260304-3"></script>
 </body>
 </html>
