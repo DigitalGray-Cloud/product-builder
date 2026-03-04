@@ -71,6 +71,24 @@ body {
     font-size: 2rem;
 }
 
+.brand-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.brand-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 999px;
+    background: #fff7db;
+    border: 1px solid #f2d681;
+    font-size: 1.1rem;
+}
+
 .auth-description {
     color: var(--text-secondary);
     margin-bottom: 1rem;
@@ -126,6 +144,54 @@ body {
     font-size: 0.95rem;
 }
 
+.sample-gallery {
+    margin-top: 1.1rem;
+    padding-top: 1rem;
+    border-top: 1px dashed var(--line);
+}
+
+.sample-gallery h2 {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.7rem;
+}
+
+.sample-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.45rem;
+}
+
+.sample-card {
+    background: #f8fafc;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 0.45rem 0.35rem;
+    text-align: center;
+}
+
+.sample-no {
+    display: inline-block;
+    min-width: 1.2rem;
+    line-height: 1.2rem;
+    border-radius: 999px;
+    font-size: 0.73rem;
+    color: #0b3554;
+    background: #d7ecff;
+    margin-bottom: 0.25rem;
+}
+
+.sample-art {
+    font-size: 1rem;
+    margin-bottom: 0.2rem;
+}
+
+.sample-card p {
+    font-size: 0.69rem;
+    color: var(--text-secondary);
+    line-height: 1.25;
+}
+
 header {
     text-align: center;
     margin-bottom: 2.2rem;
@@ -153,6 +219,15 @@ header h1 {
     align-items: center;
     gap: 1.8rem;
     margin-bottom: 2.6rem;
+}
+
+.voice-btn-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    text-align: center;
 }
 
 .glow-btn {
@@ -492,6 +567,10 @@ header h1 {
 
     .auth-card h1 {
         font-size: 1.7rem;
+    }
+
+    .sample-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
     .text-input-container {

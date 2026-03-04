@@ -4,14 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI 운동 마스터 - Workout Master</title>
-    <link rel="stylesheet" href="style.css?v=20260304-4">
+    <link rel="stylesheet" href="style.css?v=20260304-5">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
     <div id="auth-screen" class="auth-screen">
         <div class="auth-card">
             <span class="auth-badge">AI FITNESS</span>
-            <h1>AI 운동 마스터</h1>
+            <h1 class="brand-title">
+                <span>AI 운동 마스터</span>
+                <span class="brand-mark" aria-hidden="true">💪</span>
+            </h1>
             <p class="auth-description">
                 지금은 게스트로 시작할 수 있지만, 나중에 AI 분석과 맞춤 추천을 받으려면 로그인이 좋습니다.
             </p>
@@ -27,6 +30,36 @@
                 <button id="guest-login-btn" class="auth-btn guest-btn">게스트로 시작</button>
             </div>
             <p id="auth-status" class="auth-status">로그인이 필요합니다.</p>
+            <section class="sample-gallery" aria-label="캐릭터 샘플">
+                <h2>로고 샘플 (번호 선택)</h2>
+                <div class="sample-grid">
+                    <article class="sample-card">
+                        <span class="sample-no">1</span>
+                        <div class="sample-art">🫧💪</div>
+                        <p>빵빵 미쉘린</p>
+                    </article>
+                    <article class="sample-card">
+                        <span class="sample-no">2</span>
+                        <div class="sample-art">🍩🏋️</div>
+                        <p>헬스 도넛맨</p>
+                    </article>
+                    <article class="sample-card">
+                        <span class="sample-no">3</span>
+                        <div class="sample-art">🤖💪</div>
+                        <p>토이 로보머슬</p>
+                    </article>
+                    <article class="sample-card">
+                        <span class="sample-no">4</span>
+                        <div class="sample-art">🎈🏋️</div>
+                        <p>벌룬 파워맨</p>
+                    </article>
+                    <article class="sample-card">
+                        <span class="sample-no">5</span>
+                        <div class="sample-art">🥟💪</div>
+                        <p>만두 근육대장</p>
+                    </article>
+                </div>
+            </section>
         </div>
     </div>
 
@@ -124,6 +157,6 @@
         </div>
     </div>
 
-    <script type="module" src="main.js?v=20260304-4"></script>
+    <script type="module" src="main.js?v=20260304-5"></script>
 </body>
 </html>
