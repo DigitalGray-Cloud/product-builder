@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI 운동 마스터 - Workout Master</title>
-    <link rel="stylesheet" href="style.css?v=20260304-13">
+    <link rel="stylesheet" href="style.css?v=20260304-14">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
@@ -82,21 +82,17 @@
 
         <section class="export-section">
             <div class="section-header">
-                <h2>요약/복사</h2>
-                <button id="copy-all-btn" class="outline-btn small">전체 복사</button>
-            </div>
-            <div class="export-card">
-                <div class="export-head">
-                    <h3>요약</h3>
-                    <button id="copy-summary-btn" class="outline-btn small">요약 복사</button>
+                <h2>날짜별 상세</h2>
+                <div class="calendar-wrap">
+                    <input id="selected-date" type="date">
                 </div>
-                <textarea id="summary-output" class="export-output" readonly></textarea>
             </div>
             <div class="export-card">
                 <div class="export-head">
                     <h3>상세</h3>
                     <button id="copy-detail-btn" class="outline-btn small">상세 복사</button>
                 </div>
+                <p id="selected-date-label" class="helper-text"></p>
                 <textarea id="detail-output" class="export-output detail" readonly></textarea>
             </div>
             <p id="copy-status" class="helper-text"></p>
@@ -162,6 +158,6 @@
         </div>
     </div>
 
-    <script type="module" src="main.js?v=20260304-13"></script>
+    <script type="module" src="main.js?v=20260304-14"></script>
 </body>
 </html>

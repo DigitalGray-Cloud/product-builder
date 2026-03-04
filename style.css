@@ -353,6 +353,21 @@ header h1 {
     min-height: 170px;
 }
 
+.calendar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+#selected-date {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 0.45rem 0.6rem;
+    color: #1f2937;
+    background: #fff;
+    font: 600 0.9rem/1.2 "Pretendard", "Noto Sans KR", sans-serif;
+}
+
 .workout-card {
     background: var(--card-bg);
     border-radius: var(--radius);

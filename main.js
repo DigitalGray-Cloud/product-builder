@@ -30,7 +30,7 @@ import {
 const IMAGE_FALLBACK = 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=1200&auto=format&fit=crop';
 const LOCAL_LEGACY_KEYS = ['workout_master_db_v2', 'workout_master_db'];
 const MASTER_EMAIL = 'digitalgray1@gmail.com';
-const BUILD_ID = '20260304-13';
+const BUILD_ID = '20260304-14';
 
 const exerciseDB = {
     '리버스 펙덱 플라이': {
@@ -108,11 +108,10 @@ const micPermissionBtn = document.getElementById('mic-permission-btn');
 const voiceBtn = document.getElementById('voice-btn');
 const voiceStatus = document.getElementById('voice-status');
 const workoutList = document.getElementById('workout-list');
-const summaryOutput = document.getElementById('summary-output');
+const selectedDateInput = document.getElementById('selected-date');
+const selectedDateLabel = document.getElementById('selected-date-label');
 const detailOutput = document.getElementById('detail-output');
-const copySummaryBtn = document.getElementById('copy-summary-btn');
 const copyDetailBtn = document.getElementById('copy-detail-btn');
-const copyAllBtn = document.getElementById('copy-all-btn');
 const copyStatus = document.getElementById('copy-status');
 
 const reportModal = document.getElementById('report-modal');
@@ -146,6 +145,7 @@ let recognitionTranscript = '';
 let recognitionSilenceTimer = null;
 const VOICE_SILENCE_AUTO_STOP_MS = 1400;
 let lastVoiceEndedAtMs = null;
+let selectedDateKey = getLocalDateKey();
 
 const CATEGORY_IMAGE_QUERIES = {
     가슴: ['barbell bench press gym', 'incline dumbbell press'],
@@ -170,7 +170,7 @@ function getMonthKey(date = new Date()) {
 }
 
 function updateCurrentDateLabel() {
-    document.getElementById('current-date').textContent = `${getLocalDateKey()} 운동 기록`;
+    document.getElementById('current-date').textContent = `${selectedDateKey} 운동 기록`;
 }
 
 function hasFirebaseConfig(config) {
@@ -226,32 +226,6 @@ function formatDateTime(ms) {
     }).format(new Date(ms));
 }
 
-function buildSummaryText(items) {
-    const totalSets = items.reduce((sum, w) => sum + (Number(w.sets) || 0), 0);
-    const totalReps = items.reduce((sum, w) => sum + ((Number(w.reps) || 0) * (Number(w.sets) || 0)), 0);
-    const totalRunDistance = items.reduce((sum, w) => sum + (Number(w.distanceKm) || 0), 0);
-    const totalVolume = items.reduce((sum, w) => {
-        const weight = Number(w.weight);
-        if (!Number.isFinite(weight)) return sum;
-        return sum + weight * (Number(w.reps) || 0) * (Number(w.sets) || 0);
-    }, 0);
-    const uniqueExercises = new Set(items.map((w) => w.exercise)).size;
-    const voiceEndedAt = lastVoiceEndedAtMs ? formatDateTime(lastVoiceEndedAtMs) : '없음';
-    const generatedAt = formatDateTime(Date.now());
-
-    return [
-        `[오늘 운동 요약] ${getLocalDateKey()}`,
-        `운동 종류: ${uniqueExercises}개`,
-        `기록 개수: ${items.length}개`,
-        `총 세트: ${totalSets}세트`,
-        `총 반복: ${totalReps}회`,
-        `총 볼륨: ${Math.round(totalVolume)}kg`,
-        `총 러닝 거리: ${totalRunDistance.toFixed(2)}km`,
-        `최근 음성 종료 시각: ${voiceEndedAt}`,
-        `요약 생성 시각: ${generatedAt}`
-    ].join('\n');
-}
-
 function buildDetailText(items) {
     const lines = items.map((w, idx) => {
         const timeMs = Number(w.createdAtMs) || Date.now();
@@ -267,14 +241,16 @@ function buildDetailText(items) {
     });
 
     return [
-        `[오늘 운동 상세] ${getLocalDateKey()}`,
+        `[운동 상세] ${selectedDateKey}`,
         ...lines
     ].join('\n');
 }
 
 function renderExportText(items) {
-    if (!summaryOutput || !detailOutput) return;
-    summaryOutput.value = buildSummaryText(items);
+    if (!detailOutput) return;
+    if (selectedDateLabel) {
+        selectedDateLabel.textContent = `선택 날짜: ${selectedDateKey}`;
+    }
     detailOutput.value = buildDetailText(items);
 }
 
@@ -329,6 +305,7 @@ function parseWorkout(text) {
     }
 
     const now = new Date();
+    const targetDateKey = selectedDateKey || getLocalDateKey(now);
     const createdAtMs = Date.now();
     return {
         exercise: exerciseName,
@@ -338,8 +315,8 @@ function parseWorkout(text) {
         isRunning,
         distanceKm: isRunning ? distanceKm : null,
         speedKmh: isRunning ? speedKmh : null,
-        date: getLocalDateKey(now),
-        month: getMonthKey(now),
+        date: targetDateKey,
+        month: targetDateKey.slice(0, 7),
         image: resolveExerciseImage(exerciseName, knownExercise, `${createdAtMs}`),
         createdAtMs
     };
@@ -420,6 +397,8 @@ function showLoggedIn(user) {
     authScreen.hidden = true;
     appScreen.hidden = false;
     applyUserLabel(user);
+    selectedDateKey = getLocalDateKey();
+    if (selectedDateInput) selectedDateInput.value = selectedDateKey;
     updateCurrentDateLabel();
     if (!voiceBtn.disabled) {
         voiceStatus.textContent = '마이크 버튼으로 녹음 시작';
@@ -430,9 +409,8 @@ function showLoggedIn(user) {
 async function loadTodayWorkouts() {
     if (!currentUser) return;
 
-    const today = getLocalDateKey();
     const workoutsRef = collection(db, 'users', currentUser.uid, 'workouts');
-    const q = query(workoutsRef, where('date', '==', today));
+    const q = query(workoutsRef, where('date', '==', selectedDateKey));
     const snap = await getDocs(q);
     const items = snap.docs
         .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
@@ -494,6 +472,12 @@ async function editWorkout(workout) {
     }
 
     updates.image = resolveExerciseImage(exerciseName, exerciseDB[exerciseName], `${Date.now()}`);
+    if (!isRunning && (!Number.isFinite(Number(updates.reps)) || Number(updates.reps) <= 0)) {
+        updates.reps = 10;
+    }
+    if (!isRunning && (!Number.isFinite(Number(updates.sets)) || Number(updates.sets) <= 0)) {
+        updates.sets = 1;
+    }
     await updateDoc(doc(db, 'users', currentUser.uid, 'workouts', workout.id), updates);
 
     await loadTodayWorkouts();
@@ -1051,22 +1035,19 @@ function wireEvents() {
         };
     }
 
-    if (copySummaryBtn) {
-        copySummaryBtn.onclick = async () => {
-            await copyText(summaryOutput?.value || '', '요약');
-        };
-    }
-
     if (copyDetailBtn) {
         copyDetailBtn.onclick = async () => {
             await copyText(detailOutput?.value || '', '상세');
         };
     }
 
-    if (copyAllBtn) {
-        copyAllBtn.onclick = async () => {
-            const fullText = [summaryOutput?.value || '', detailOutput?.value || ''].filter(Boolean).join('\n\n');
-            await copyText(fullText, '전체');
+    if (selectedDateInput) {
+        selectedDateInput.value = selectedDateKey;
+        selectedDateInput.onchange = async () => {
+            if (!selectedDateInput.value) return;
+            selectedDateKey = selectedDateInput.value;
+            updateCurrentDateLabel();
+            await loadTodayWorkouts();
         };
     }
 
