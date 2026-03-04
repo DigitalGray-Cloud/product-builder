@@ -30,7 +30,7 @@ import {
 const IMAGE_FALLBACK = 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=1200&auto=format&fit=crop';
 const LOCAL_LEGACY_KEYS = ['workout_master_db_v2', 'workout_master_db'];
 const MASTER_EMAIL = 'digitalgray1@gmail.com';
-const BUILD_ID = '20260304-14';
+const BUILD_ID = '20260304-15';
 
 const exerciseDB = {
     '리버스 펙덱 플라이': {
@@ -100,6 +100,7 @@ const googleLoginBtn = document.getElementById('google-login-btn');
 const kakaoLoginBtn = document.getElementById('kakao-login-btn');
 const guestLoginBtn = document.getElementById('guest-login-btn');
 const userEmail = document.getElementById('user-email');
+const editNicknameBtn = document.getElementById('edit-nickname-btn');
 const logoutBtn = document.getElementById('logout-btn');
 
 const exerciseInput = document.getElementById('exercise-input');
@@ -521,31 +522,26 @@ async function generateReport() {
 
     let totalSets = 0;
     const daySet = new Set();
-    const catStats = {};
     const exStats = {};
 
     snap.docs.forEach((docSnap) => {
         const w = docSnap.data();
         daySet.add(w.date);
-        totalSets += w.sets || 0;
-        const category = exerciseDB[w.exercise]?.category || '기타';
-        catStats[category] = (catStats[category] || 0) + (w.sets || 0);
-        exStats[w.exercise] = (exStats[w.exercise] || 0) + (w.sets || 0);
+        const unitCount = w.isRunning ? (Number(w.distanceKm) || 0) : (Number(w.sets) || 0);
+        totalSets += Number(w.sets) || 0;
+        exStats[w.exercise] = (exStats[w.exercise] || 0) + unitCount;
     });
 
-    const top = Object.entries(exStats).sort((a, b) => b[1] - a[1])[0] || ['없음', 0];
+    const sortedStats = Object.entries(exStats).sort((a, b) => b[1] - a[1]);
+    const top = sortedStats[0] || ['없음', 0];
+    const maxValue = sortedStats.length ? sortedStats[0][1] : 1;
     reportView.replaceChildren();
 
     const title = document.createElement('h2');
-    title.textContent = `${currentMonth.split('-')[1]}월 운동 리포트`;
+    title.textContent = `${currentMonth} 월별 리포트`;
 
     const summary = document.createElement('div');
     summary.className = 'report-summary';
-    summary.style.display = 'flex';
-    summary.style.justifyContent = 'space-around';
-    summary.style.background = '#1a1a1a';
-    summary.style.padding = '1.5rem';
-    summary.style.borderRadius = '12px';
 
     const dayBox = document.createElement('div');
     dayBox.innerHTML = `<span>총 운동일</span><br><strong>${daySet.size}일</strong>`;
@@ -554,22 +550,45 @@ async function generateReport() {
     summary.append(dayBox, setBox);
 
     const topLine = document.createElement('p');
-    topLine.style.margin = '1rem 0';
-    topLine.textContent = `가장 많이 한 운동: ${top[0]} (${top[1]}세트)`;
+    topLine.className = 'report-top-line';
+    topLine.textContent = `가장 많이 한 항목: ${top[0]} (${top[1].toFixed(1)})`;
 
-    const section = document.createElement('div');
-    section.style.marginTop = '2rem';
-    const sectionTitle = document.createElement('h4');
-    sectionTitle.textContent = '부위별 데이터';
-    section.appendChild(sectionTitle);
+    const chartWrap = document.createElement('div');
+    chartWrap.className = 'report-chart';
 
-    Object.entries(catStats).forEach(([category, sets]) => {
-        const p = document.createElement('p');
-        p.textContent = `${category}: ${sets}세트`;
-        section.appendChild(p);
-    });
+    if (!sortedStats.length) {
+        const empty = document.createElement('p');
+        empty.className = 'master-empty';
+        empty.textContent = '해당 월 데이터가 없습니다.';
+        chartWrap.appendChild(empty);
+    } else {
+        sortedStats.forEach(([name, value]) => {
+            const row = document.createElement('div');
+            row.className = 'chart-row';
 
-    reportView.append(title, summary, topLine, section);
+            const label = document.createElement('div');
+            label.className = 'chart-label';
+            label.textContent = name;
+
+            const track = document.createElement('div');
+            track.className = 'chart-track';
+
+            const bar = document.createElement('div');
+            bar.className = 'chart-bar';
+            const ratio = maxValue > 0 ? (value / maxValue) * 100 : 0;
+            bar.style.width = `${Math.max(6, ratio)}%`;
+
+            const valueEl = document.createElement('span');
+            valueEl.className = 'chart-value';
+            valueEl.textContent = Number.isInteger(value) ? String(value) : value.toFixed(1);
+
+            track.append(bar);
+            row.append(label, track, valueEl);
+            chartWrap.appendChild(row);
+        });
+    }
+
+    reportView.append(title, summary, topLine, chartWrap);
 }
 
 async function sendReportEmail() {
@@ -763,6 +782,31 @@ async function saveProfile(skip = false) {
     }
 
     profileModal.style.display = 'none';
+}
+
+async function editNicknameQuick() {
+    if (!currentUser) return;
+    const userSnap = await getDoc(doc(db, 'users', currentUser.uid));
+    const userData = userSnap.data() || {};
+    const currentProfile = userData.profile || {};
+    const currentName = String(currentProfile.name || '').trim();
+    const next = prompt('닉네임을 입력하세요', currentName);
+    if (next === null) return;
+    const nickname = String(next).trim();
+    if (!nickname) {
+        alert('닉네임은 비워둘 수 없습니다.');
+        return;
+    }
+
+    await setDoc(doc(db, 'users', currentUser.uid), {
+        profile: {
+            ...currentProfile,
+            name: nickname
+        },
+        updatedAt: serverTimestamp()
+    }, { merge: true });
+
+    applyUserLabel(currentUser, nickname);
 }
 
 function readLegacyLocalHistory() {
@@ -1020,6 +1064,12 @@ function wireEvents() {
     logoutBtn.onclick = async () => {
         await signOut(auth);
     };
+
+    if (editNicknameBtn) {
+        editNicknameBtn.onclick = async () => {
+            await editNicknameQuick();
+        };
+    }
 
     saveProfileBtn.onclick = async () => {
         await saveProfile(false);
