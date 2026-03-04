@@ -30,7 +30,7 @@ import {
 const IMAGE_FALLBACK = 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=1200&auto=format&fit=crop';
 const LOCAL_LEGACY_KEYS = ['workout_master_db_v2', 'workout_master_db'];
 const MASTER_EMAIL = 'digitalgray1@gmail.com';
-const BUILD_ID = '20260304-5';
+const BUILD_ID = '20260304-10';
 
 const exerciseDB = {
     '리버스 펙덱 플라이': {
