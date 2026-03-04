@@ -64,6 +64,12 @@ body {
     margin-bottom: -0.35rem;
 }
 
+.app-hero {
+    background: #ffffff;
+    border-radius: 18px;
+    padding: 0.5rem;
+}
+
 .auth-badge {
     display: inline-flex;
     font-size: 0.75rem;
@@ -130,6 +136,7 @@ body {
     width: 400px;
     height: 400px;
     background: #ffffff;
+    border-radius: 14px;
 }
 
 .auth-description {
