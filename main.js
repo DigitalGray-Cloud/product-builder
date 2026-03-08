@@ -100,6 +100,7 @@ const googleLoginBtn = document.getElementById('google-login-btn');
 const kakaoLoginBtn = document.getElementById('kakao-login-btn');
 const guestLoginBtn = document.getElementById('guest-login-btn');
 const userEmail = document.getElementById('user-email');
+const manualBtn = document.getElementById('manual-btn');
 const editNicknameBtn = document.getElementById('edit-nickname-btn');
 const logoutBtn = document.getElementById('logout-btn');
 
@@ -108,6 +109,8 @@ const addBtn = document.getElementById('add-btn');
 const micPermissionBtn = document.getElementById('mic-permission-btn');
 const voiceBtn = document.getElementById('voice-btn');
 const voiceStatus = document.getElementById('voice-status');
+const entryDateLabel = document.getElementById('entry-date-label');
+const jumpTodayBtn = document.getElementById('jump-today-btn');
 const workoutList = document.getElementById('workout-list');
 const selectedDateInput = document.getElementById('selected-date');
 const selectedDateLabel = document.getElementById('selected-date-label');
@@ -116,8 +119,11 @@ const copyDetailBtn = document.getElementById('copy-detail-btn');
 const copyStatus = document.getElementById('copy-status');
 
 const reportModal = document.getElementById('report-modal');
+const reportCloseBtn = document.getElementById('report-close-btn');
 const reportView = document.getElementById('report-view');
 const emailInput = document.getElementById('email-input');
+const manualModal = document.getElementById('manual-modal');
+const manualCloseBtn = document.getElementById('manual-close-btn');
 
 const profileModal = document.getElementById('profile-modal');
 const profileName = document.getElementById('profile-name');
@@ -170,8 +176,15 @@ function getMonthKey(date = new Date()) {
     return getLocalDateKey(date).slice(0, 7);
 }
 
+function isFutureDateKey(dateKey) {
+    return String(dateKey) > getLocalDateKey();
+}
+
 function updateCurrentDateLabel() {
     document.getElementById('current-date').textContent = `${selectedDateKey} 운동 기록`;
+    if (entryDateLabel) {
+        entryDateLabel.textContent = `기록 대상 날짜: ${selectedDateKey} (지난 기록 입력 가능)`;
+    }
 }
 
 function hasFirebaseConfig(config) {
@@ -270,19 +283,20 @@ function parseWorkout(text) {
     const normalized = String(text || '').trim();
     const runningPattern = /(런닝|러닝|달리기|조깅|러닝머신)/;
     const isRunning = runningPattern.test(normalized);
-    const weightMatch = text.match(/(\d+(?:\.\d+)?)\s*(kg|킬로)/i);
-    const repsMatch = text.match(/(\d+)\s*(회|번)/);
-    const setsMatch = text.match(/(\d+)\s*(세트|셋)/);
-    const distanceMatch = text.match(/(\d+(?:\.\d+)?)\s*(km|키로(?:미터)?|킬로(?:미터)?)/i);
+    const weightMatch = normalized.match(/(\d+(?:\.\d+)?)\s*(kg|킬로|키로)/i);
+    const repsMatch = normalized.match(/(\d+)\s*(회|번)/);
+    const setsMatch = normalized.match(/(\d+)\s*(세트|셋)/);
+    const distanceMatch = normalized.match(/(\d+(?:\.\d+)?)\s*(km|키로(?:미터)?|킬로(?:미터)?)/i);
     const speedMatch =
-        text.match(/속도\s*(\d+(?:\.\d+)?)/i) ||
-        text.match(/(\d+(?:\.\d+)?)\s*(km\/h|kph|키로\/시|킬로\/시)/i);
+        normalized.match(/속도\s*(\d+(?:\.\d+)?)/i) ||
+        normalized.match(/(\d+(?:\.\d+)?)\s*(km\/h|kph|키로\/시|킬로\/시)/i);
 
     const weight = weightMatch ? parseFloat(weightMatch[1]) : null;
-    const reps = repsMatch ? parseInt(repsMatch[1], 10) : 10;
-    const sets = setsMatch ? parseInt(setsMatch[1], 10) : 1;
+    let reps = repsMatch ? parseInt(repsMatch[1], 10) : 10;
+    let sets = setsMatch ? parseInt(setsMatch[1], 10) : 1;
     const distanceKm = distanceMatch ? parseFloat(distanceMatch[1]) : null;
     const speedKmh = speedMatch ? parseFloat(speedMatch[1]) : null;
+    let parsedWeight = weight;
 
     let exerciseName = '';
     let knownExercise = null;
@@ -302,7 +316,30 @@ function parseWorkout(text) {
             imageQuery: 'running treadmill gym'
         };
     } else if (!exerciseName) {
-        exerciseName = text.split(/\d/)[0].trim() || '기타 운동';
+        exerciseName = normalized.split(/\d/)[0].trim() || '기타 운동';
+    }
+
+    if (!isRunning && !repsMatch && !setsMatch) {
+        const numericTokens = (normalized.match(/\d+(?:\.\d+)?/g) || [])
+            .map((v) => Number(v))
+            .filter((v) => Number.isFinite(v));
+
+        if (numericTokens.length >= 3) {
+            parsedWeight = numericTokens[0];
+            reps = Math.max(1, Math.round(numericTokens[1]));
+            sets = Math.max(1, Math.round(numericTokens[2]));
+        } else if (numericTokens.length === 2) {
+            parsedWeight = numericTokens[0];
+            reps = 10;
+            sets = Math.max(1, Math.round(numericTokens[1]));
+        } else if (numericTokens.length === 1 && parsedWeight === null) {
+            parsedWeight = numericTokens[0];
+        }
+    }
+
+    if (!isRunning) {
+        if (!Number.isFinite(reps) || reps <= 0) reps = 10;
+        if (!Number.isFinite(sets) || sets <= 0) sets = 1;
     }
 
     const now = new Date();
@@ -310,7 +347,7 @@ function parseWorkout(text) {
     const createdAtMs = Date.now();
     return {
         exercise: exerciseName,
-        weight: isRunning ? null : weight,
+        weight: isRunning ? null : parsedWeight,
         reps: isRunning ? 0 : reps,
         sets: isRunning ? 0 : sets,
         isRunning,
@@ -500,6 +537,10 @@ function applyUserLabel(user, nickname = '') {
 
 async function commitWorkout(workout) {
     if (!currentUser) return;
+    if (isFutureDateKey(workout?.date)) {
+        alert('미래 날짜는 기록할 수 없습니다. 날짜를 다시 선택해주세요.');
+        return;
+    }
 
     const workoutsRef = collection(db, 'users', currentUser.uid, 'workouts');
     await addDoc(workoutsRef, {
@@ -1055,9 +1096,23 @@ function wireEvents() {
         reportModal.style.display = 'block';
     };
 
-    document.querySelector('.close').onclick = () => {
-        reportModal.style.display = 'none';
-    };
+    if (reportCloseBtn) {
+        reportCloseBtn.onclick = () => {
+            reportModal.style.display = 'none';
+        };
+    }
+
+    if (manualBtn && manualModal) {
+        manualBtn.onclick = () => {
+            manualModal.style.display = 'block';
+        };
+    }
+
+    if (manualCloseBtn && manualModal) {
+        manualCloseBtn.onclick = () => {
+            manualModal.style.display = 'none';
+        };
+    }
 
     document.getElementById('send-email-btn').onclick = sendReportEmail;
 
@@ -1092,10 +1147,23 @@ function wireEvents() {
     }
 
     if (selectedDateInput) {
+        selectedDateInput.max = getLocalDateKey();
         selectedDateInput.value = selectedDateKey;
         selectedDateInput.onchange = async () => {
             if (!selectedDateInput.value) return;
+            if (isFutureDateKey(selectedDateInput.value)) {
+                selectedDateInput.value = getLocalDateKey();
+            }
             selectedDateKey = selectedDateInput.value;
+            updateCurrentDateLabel();
+            await loadTodayWorkouts();
+        };
+    }
+
+    if (jumpTodayBtn) {
+        jumpTodayBtn.onclick = async () => {
+            selectedDateKey = getLocalDateKey();
+            if (selectedDateInput) selectedDateInput.value = selectedDateKey;
             updateCurrentDateLabel();
             await loadTodayWorkouts();
         };
@@ -1104,6 +1172,7 @@ function wireEvents() {
     window.onclick = (event) => {
         if (event.target === reportModal) reportModal.style.display = 'none';
         if (event.target === profileModal) profileModal.style.display = 'none';
+        if (event.target === manualModal) manualModal.style.display = 'none';
     };
 }
 

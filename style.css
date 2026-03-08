@@ -198,6 +198,7 @@ body {
 }
 
 header {
+    position: relative;
     text-align: center;
     margin-bottom: 2.2rem;
 }
@@ -216,6 +217,30 @@ header h1 {
     justify-content: center;
     align-items: center;
     flex-wrap: wrap;
+}
+
+.header-tools {
+    position: absolute;
+    top: 0;
+    right: 0;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.manual-highlight-btn {
+    background: #0ea5a0;
+    color: #ffffff;
+    border: 2px solid #0b7f7b;
+    border-radius: 12px;
+    padding: 0.5rem 0.85rem;
+    font-weight: 900;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    box-shadow: 0 8px 18px rgba(14, 165, 160, 0.26);
+}
+
+.manual-highlight-btn:hover {
+    filter: brightness(0.95);
 }
 
 .input-section {
@@ -282,6 +307,19 @@ header h1 {
     padding: 6px;
     border-radius: var(--radius);
     border: 1px solid var(--line);
+}
+
+.entry-date-bar {
+    width: 100%;
+    max-width: 550px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+}
+
+.entry-date-bar .helper-text {
+    margin: 0;
 }
 
 #exercise-input {
@@ -528,6 +566,30 @@ header h1 {
     position: relative;
 }
 
+.manual-content {
+    max-width: 760px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.manual-block {
+    margin-top: 1rem;
+    padding: 0.9rem;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: #f8fafc;
+}
+
+.manual-block h4 {
+    margin: 0 0 0.5rem;
+    color: var(--navy);
+}
+
+.manual-block ul {
+    margin: 0;
+    padding-left: 1.1rem;
+}
+
 .report-summary {
     display: flex;
     justify-content: space-around;
@@ -671,6 +733,28 @@ header h1 {
     border-radius: 10px;
 }
 
+.site-footer {
+    margin: 0 auto 1.2rem;
+    width: min(100%, 920px);
+    padding: 0 1.2rem;
+    color: #64748b;
+    font-size: 0.88rem;
+    text-align: center;
+}
+
+.footer-links {
+    margin-top: 0.3rem;
+    display: flex;
+    justify-content: center;
+    gap: 0.9rem;
+}
+
+.footer-links a {
+    color: #475569;
+    text-decoration: none;
+    border-bottom: 1px dashed #94a3b8;
+}
+
 @media (max-width: 600px) {
     #app {
         padding: 1rem 0.8rem 2rem;
@@ -729,6 +813,12 @@ header h1 {
     .master-stats,
     .master-grid {
         grid-template-columns: 1fr;
+    }
+
+    .header-tools {
+        position: static;
+        justify-content: center;
+        margin-bottom: 0.5rem;
     }
 
     .chart-row {
